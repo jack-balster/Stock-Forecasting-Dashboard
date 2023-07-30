@@ -12,6 +12,7 @@ import base64
 import plotly.graph_objects as go
 import sqlite3
 
+
 # Connect to the Watchlist SQLite database
 conn = sqlite3.connect('watchlist.db')
 c = conn.cursor()
@@ -43,7 +44,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-    
+
 # Function to fetch S&P 500 tickers
 def fetch_sp500_tickers():
     url = 'https://datahub.io/core/s-and-p-500-companies/r/constituents.csv'
@@ -88,6 +89,7 @@ def create_candlestick_chart(data):
 
 def create_forecast_chart(m, forecast, n_years):
     fig = plot_plotly(m, forecast)
+    fig.update_traces(selector=dict(name=fig.data[0].name), line=dict(color='red'))
     fig.update_traces(mode='lines')
     fig.update_layout(xaxis=dict(title=''), yaxis=dict(title=''))
     fig.update_layout(margin=dict(l=0, r=0, t=40, b=0), width=800)
@@ -132,8 +134,6 @@ def calculate_return(ticker, start_date, end_date):
 
 # Home tab to display info on all the other tabs
 if selected_tab == "Home":
-
-    st.info('Please switch to "light" mode by selecting settings in the top right corner and choosing from the list of themes')
 
     st.subheader("Welcome to Jack's Stock Forecasting App!")
     st.write("This app allows you to predict S&P 500 stock prices using the Meta Prophet library. It utilizes historical S&P 500 stock data to train a model and generates forecasts for the selected stock.")
@@ -444,7 +444,6 @@ elif selected_tab == "Raw Data":
     
 # Tab to view stocks with highest returns over a given time frame
 elif selected_tab == "Highest Returns":
-    st.write("Calculations can take a long time. Sorry for the inconvience :/")
     
     # Define the range of years for the dropdown menu
     years = list(range(2010, date.today().year + 1))
@@ -455,7 +454,13 @@ elif selected_tab == "Highest Returns":
     
     # Convert the start and end years to date objects
     start_date = date(start_year, 1, 1)
-    end_date = date(end_year, 12, 31)
+    # Check if the end year is the current year
+    if end_year == date.today().year:
+    # If the end year is the current year, set the end_date to January 1st of the current year
+        end_date = date(date.today().year, 1, 1)
+    else:
+    # If the end year is not the current year, set the end_date to December 31st of the selected end year
+        end_date = date(end_year, 12, 31)
     
     # Create an empty dictionary to store the calculated returns for each stock
     returns = {}
