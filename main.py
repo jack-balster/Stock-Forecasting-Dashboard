@@ -47,8 +47,11 @@ st.set_page_config(
 
 # Function to fetch S&P 500 tickers
 def fetch_sp500_tickers():
-    url = 'https://datahub.io/core/s-and-p-500-companies/r/constituents.csv'
-    df = pd.read_csv(url)
+    # Path to the local CSV file
+    file_path = 'symbols_csv.csv'
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(file_path)
+    # Extract the 'Symbol' column and convert to a list
     sp500_tickers = df['Symbol'].tolist()
     return sp500_tickers
 
