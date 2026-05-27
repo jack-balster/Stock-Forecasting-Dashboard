@@ -11,10 +11,13 @@ import pandas as pd
 import base64
 import plotly.graph_objects as go
 import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # Connect to the Watchlist SQLite database
-conn = sqlite3.connect('watchlist.db')
+conn = sqlite3.connect(os.path.join(BASE_DIR, 'watchlist.db'))
 c = conn.cursor()
 
 # Create a table to store watchlist data
@@ -26,7 +29,7 @@ conn.close()
 
 
 # Connect to the Returns SQLite database
-conn = sqlite3.connect('returns.db')
+conn = sqlite3.connect(os.path.join(BASE_DIR, 'returns.db'))
 c = conn.cursor()
 
 # Create a table to store calculated returns
@@ -48,7 +51,7 @@ st.set_page_config(
 # Function to fetch S&P 500 tickers
 def fetch_sp500_tickers():
     # Path to the local CSV file
-    file_path = 'symbols_csv.csv'
+    file_path = os.path.join(BASE_DIR, 'symbols_csv.csv')
     # Read the CSV file into a DataFrame
     df = pd.read_csv(file_path)
     # Extract the 'Symbol' column and convert to a list
@@ -76,7 +79,10 @@ selected_tab = st.sidebar.selectbox("Select Tab", tabs)
 @st.cache_data
 def load_data(ticker, start_date, end_date):
     data = yf.download(ticker, start_date, end_date)
+    data.index.name = 'Date'
     data.reset_index(inplace=True)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.droplevel(1)
     return data
 
 # Function to create candlestick chart
@@ -109,7 +115,7 @@ def download_csv(dataframe, filename):
 @st.cache_data
 def calculate_return(ticker, start_date, end_date):
     # Connect to the SQLite database
-    conn = sqlite3.connect('returns.db')
+    conn = sqlite3.connect(os.path.join(BASE_DIR, 'returns.db'))
     c = conn.cursor()
 
     # Check if return value exists in the database
@@ -121,7 +127,10 @@ def calculate_return(ticker, start_date, end_date):
     else:
         # Calculate the return
         data = yf.download(ticker, start_date, end_date)
-        start_price = data.iloc[0]['Close']
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.droplevel(1)
+        start_price = float(data.iloc[0]['Close'])
+
         end_price = data.iloc[-1]['Close']
         return_value = (end_price - start_price) / start_price * 100
 
@@ -504,7 +513,7 @@ elif selected_tab == "My Watchlist":
     user_id = 1
 
     # Connect to the SQLite database
-    conn = sqlite3.connect('watchlist.db')
+    conn = sqlite3.connect(os.path.join(BASE_DIR, 'watchlist.db'))
     c = conn.cursor()
 
     # Load stocks from the database for the current user
@@ -518,7 +527,7 @@ elif selected_tab == "My Watchlist":
     portfolio_stocks = st.multiselect('Select stocks to add to your watchlist', sp500_tickers, default=saved_stocks)
 
     # Connect to the SQLite database
-    conn = sqlite3.connect('watchlist.db')
+    conn = sqlite3.connect(os.path.join(BASE_DIR, 'watchlist.db'))
     c = conn.cursor()
 
     # Save selected stocks to the database
